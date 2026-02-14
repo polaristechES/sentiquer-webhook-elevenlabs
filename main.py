@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import json
 import hmac
 import hashlib
@@ -108,10 +109,24 @@ def formatear_duracion(segundos: int) -> str:
 
 def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: str, duracion: int):
     """Envía el email con el resumen vía Resend"""
-    
-    ahora = datetime.now()
-    fecha = ahora.strftime("%d de %B de %Y")
+
+    # Usar zona horaria de España (Madrid)
+    ahora = datetime.now(ZoneInfo("Europe/Madrid"))
+
+    # Nombres de meses en español
+    meses_es = {
+        1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
+        5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
+        9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+    }
+
+    # Formatear fecha en español
+    dia = ahora.day
+    mes = meses_es[ahora.month]
+    año = ahora.year
+    fecha = f"{dia} de {mes} de {año}"
     hora = ahora.strftime("%H:%M")
+
     duracion_formateada = formatear_duracion(duracion)
     
     # Construir secciones HTML
