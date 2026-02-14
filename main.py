@@ -309,38 +309,49 @@ async def elevenlabs_webhook(request: Request):
         #     print("⚠️  Secret no configurado, omitiendo verificación de firma")
 
         # Parsear los datos del webhook
-        data = json.loads(body)
+        payload = json.loads(body)
 
-        # DEBUG: Imprimir estructura del payload para entender formato de ElevenLabs
-        print("📋 Estructura del payload recibido:")
-        print(f"   Keys: {list(data.keys())}")
-
-        # Imprimir primeros 500 caracteres del payload (sin datos sensibles)
-        payload_preview = json.dumps(data, indent=2)[:500]
-        print(f"   Preview: {payload_preview}...")
-
-        # Extraer información relevante
-        event_type = data.get("event_type")
+        # ElevenLabs usa el campo "type" en lugar de "event_type"
+        event_type = payload.get("type")
         print(f"📋 Tipo de evento: {event_type}")
 
-        # Solo procesar cuando termina la conversación
-        if event_type == "conversation.ended":
-            conversation_id = data.get("conversation_id")
-            transcript = data.get("transcript", "")
-            duration = data.get("duration_seconds", 0)
+        # Solo procesar cuando es post_call_transcription
+        if event_type == "post_call_transcription":
+            # Los datos están dentro del campo "data"
+            data = payload.get("data", {})
+
+            # Extraer información
+            conversation_id = data.get("conversation_id", "unknown")
+            agent_name = data.get("agent_name", "")
+            user_id = data.get("user_id", "Usuario")
+
+            # La transcripción viene como array de mensajes
+            transcript_array = data.get("transcript", [])
+
+            # Convertir array de transcripción a texto
+            transcript_text = ""
+            for msg in transcript_array:
+                role = msg.get("role", "")
+                message = msg.get("message", "")
+                transcript_text += f"{role}: {message}\n"
+
+            # Calcular duración aproximada (si no viene en el payload)
+            # Por ahora usaremos un valor estimado o lo extraemos si está disponible
+            duration = data.get("duration_seconds", len(transcript_text) // 10)  # Estimación
 
             print(f"🆔 Conversation ID: {conversation_id}")
+            print(f"👤 Agent: {agent_name}")
+            print(f"📞 User ID: {user_id}")
             print(f"⏱️  Duración: {duration} segundos")
-            print(f"📝 Transcripción: {len(transcript)} caracteres")
+            print(f"📝 Transcripción: {len(transcript_text)} caracteres")
 
-            # Obtener nombre del usuario si viene en metadata
-            metadata = data.get("metadata", {})
-            nombre_usuario = metadata.get("nombre", "Usuario")
+            # Usar nombre del agente o user_id como nombre
+            nombre_usuario = user_id if user_id != "Usuario" else agent_name
             print(f"👤 Usuario: {nombre_usuario}")
 
             # Generar resumen con OpenAI
             print("🤖 Generando resumen con OpenAI...")
-            resumen = generar_resumen(transcript, duration, nombre_usuario)
+            resumen = generar_resumen(transcript_text, duration, nombre_usuario)
             print(f"✅ Resumen generado: {len(str(resumen))} caracteres")
 
             # Enviar email
