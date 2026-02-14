@@ -265,9 +265,18 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
         "subject": f"💬 Conversación con {nombre_usuario} - {fecha}",
         "html": html_email
     }
-    
-    email = resend.Emails.send(params)
-    return email
+
+    print(f"   📤 Enviando email desde: {params['from']}")
+    print(f"   📥 Destinatario: {params['to'][0]}")
+    print(f"   📋 Asunto: {params['subject']}")
+
+    try:
+        email = resend.Emails.send(params)
+        print(f"   ✅ Resend response: {email}")
+        return email
+    except Exception as e:
+        print(f"   ❌ Error enviando email con Resend: {str(e)}")
+        raise
 
 
 @app.post("/webhook/elevenlabs")
@@ -275,49 +284,78 @@ async def elevenlabs_webhook(request: Request):
     """Endpoint que recibe el webhook de ElevenLabs al finalizar llamada"""
 
     try:
+        print("=" * 60)
+        print("🔔 Webhook recibido de ElevenLabs")
+
         # Obtener el body raw para verificar la firma
         body = await request.body()
+        print(f"📦 Tamaño del payload: {len(body)} bytes")
 
         # Verificar la firma del webhook si hay secret configurado
         if ELEVENLABS_WEBHOOK_SECRET:
             signature = request.headers.get("x-elevenlabs-signature", "")
+            print(f"🔐 Verificando firma... (secret configurado: Sí)")
             if not verificar_webhook_signature(body, signature):
+                print("❌ ERROR: Firma inválida!")
                 raise HTTPException(status_code=401, detail="Invalid webhook signature")
+            print("✅ Firma verificada correctamente")
+        else:
+            print("⚠️  Secret no configurado, omitiendo verificación de firma")
 
         # Parsear los datos del webhook
         data = json.loads(body)
-        
+
         # Extraer información relevante
         event_type = data.get("event_type")
-        
+        print(f"📋 Tipo de evento: {event_type}")
+
         # Solo procesar cuando termina la conversación
         if event_type == "conversation.ended":
             conversation_id = data.get("conversation_id")
             transcript = data.get("transcript", "")
             duration = data.get("duration_seconds", 0)
-            
+
+            print(f"🆔 Conversation ID: {conversation_id}")
+            print(f"⏱️  Duración: {duration} segundos")
+            print(f"📝 Transcripción: {len(transcript)} caracteres")
+
             # Obtener nombre del usuario si viene en metadata
             metadata = data.get("metadata", {})
             nombre_usuario = metadata.get("nombre", "Usuario")
-            
+            print(f"👤 Usuario: {nombre_usuario}")
+
             # Generar resumen con OpenAI
+            print("🤖 Generando resumen con OpenAI...")
             resumen = generar_resumen(transcript, duration, nombre_usuario)
-            
+            print(f"✅ Resumen generado: {len(str(resumen))} caracteres")
+
             # Enviar email
+            print("📧 Enviando email con Resend...")
             enviar_email_resumen(resumen, nombre_usuario, conversation_id, duration)
-            
+            print("✅ Email enviado correctamente!")
+            print("=" * 60)
+
             return JSONResponse(
                 status_code=200,
                 content={"message": "Resumen enviado correctamente"}
             )
-        
+
+        print(f"ℹ️  Evento '{event_type}' recibido pero no procesado")
+        print("=" * 60)
         return JSONResponse(
             status_code=200,
             content={"message": "Evento recibido pero no procesado"}
         )
-        
+
+    except HTTPException as e:
+        print(f"❌ HTTPException: {e.detail}")
+        print("=" * 60)
+        raise
     except Exception as e:
-        print(f"Error procesando webhook: {str(e)}")
+        print(f"❌ ERROR procesando webhook: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        print("=" * 60)
         return JSONResponse(
             status_code=500,
             content={"error": str(e)}
