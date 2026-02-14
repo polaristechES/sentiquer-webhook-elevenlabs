@@ -246,7 +246,7 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
                             <td style="padding: 30px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center; border-top: 1px solid #e5e7eb;">
                                 <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.5;">
                                     Este resumen fue generado automáticamente<br>
-                                    <strong style="color: #667eea;">Sentiquer</strong> • Acompañamiento con cariño
+                                    <strong style="color: #667eea;">Senticare</strong> • Acompañamiento con cariño
                                 </p>
                             </td>
                         </tr>
@@ -326,7 +326,7 @@ async def elevenlabs_webhook(request: Request):
 
 @app.get("/")
 async def root():
-    return {"status": "Webhook server activo", "service": "Sentiquer ElevenLabs"}
+    return {"status": "Webhook server activo", "service": "Senticare ElevenLabs"}
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Sentiquer - Webhook ElevenLabs
+# Senticare - Webhook ElevenLabs
 
 Servidor webhook que recibe transcripciones de conversaciones de ElevenLabs, genera resúmenes con OpenAI y los envía por email.
 
