@@ -291,24 +291,37 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
     if email_to_2:
         destinatarios.append(email_to_2)
 
-    params = {
-        "from": os.getenv("EMAIL_FROM"),
-        "to": destinatarios,
-        "subject": f"💬 Conversación con {nombre_usuario} - {fecha}",
-        "html": html_email
-    }
+    print(f"   📤 Enviando desde: {os.getenv('EMAIL_FROM')}")
+    print(f"   📥 Enviando {len(destinatarios)} email(s) independiente(s)")
+    print(f"   📋 Asunto: 💬 Conversación con {nombre_usuario} - {fecha}")
 
-    print(f"   📤 Enviando email desde: {params['from']}")
-    print(f"   📥 Destinatarios: {', '.join(params['to'])}")
-    print(f"   📋 Asunto: {params['subject']}")
+    # Enviar un email independiente a cada destinatario
+    resultados = []
+    for destinatario in destinatarios:
+        try:
+            print(f"   ➤ Enviando a: {destinatario}")
 
-    try:
-        email = resend.Emails.send(params)
-        print(f"   ✅ Resend response: {email}")
-        return email
-    except Exception as e:
-        print(f"   ❌ Error enviando email con Resend: {str(e)}")
-        raise
+            params = {
+                "from": os.getenv("EMAIL_FROM"),
+                "to": [destinatario],  # Solo un destinatario por email
+                "subject": f"💬 Conversación con {nombre_usuario} - {fecha}",
+                "html": html_email
+            }
+
+            email = resend.Emails.send(params)
+            print(f"     ✅ Enviado correctamente")
+            resultados.append(email)
+
+        except Exception as e:
+            print(f"     ❌ Error enviando a {destinatario}: {str(e)}")
+            # Continuar con el siguiente destinatario aunque falle uno
+            continue
+
+    if not resultados:
+        raise Exception("No se pudo enviar el email a ningún destinatario")
+
+    print(f"   ✅ {len(resultados)}/{len(destinatarios)} emails enviados correctamente")
+    return resultados
 
 
 @app.post("/webhook/elevenlabs")
