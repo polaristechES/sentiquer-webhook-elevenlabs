@@ -311,6 +311,14 @@ async def elevenlabs_webhook(request: Request):
         # Parsear los datos del webhook
         data = json.loads(body)
 
+        # DEBUG: Imprimir estructura del payload para entender formato de ElevenLabs
+        print("📋 Estructura del payload recibido:")
+        print(f"   Keys: {list(data.keys())}")
+
+        # Imprimir primeros 500 caracteres del payload (sin datos sensibles)
+        payload_preview = json.dumps(data, indent=2)[:500]
+        print(f"   Preview: {payload_preview}...")
+
         # Extraer información relevante
         event_type = data.get("event_type")
         print(f"📋 Tipo de evento: {event_type}")
