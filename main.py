@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 import resend
 import os
@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
 import json
+import hmac
+import hashlib
 
 load_dotenv()
 
@@ -16,6 +18,23 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # Cliente de OpenAI para generar resumen
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Webhook secret de ElevenLabs
+ELEVENLABS_WEBHOOK_SECRET = os.getenv("ELEVENLABS_WEBHOOK_SECRET")
+
+def verificar_webhook_signature(payload: bytes, signature: str) -> bool:
+    """Verifica que la petición viene realmente de ElevenLabs"""
+    if not ELEVENLABS_WEBHOOK_SECRET:
+        # Si no hay secret configurado, permitir la petición (para desarrollo)
+        return True
+
+    expected_signature = hmac.new(
+        ELEVENLABS_WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected_signature)
 
 def generar_resumen(transcripcion: str, duracion: int, nombre_usuario: str) -> dict:
     """Genera un resumen estructurado de la llamada usando OpenAI"""
@@ -254,10 +273,19 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
 @app.post("/webhook/elevenlabs")
 async def elevenlabs_webhook(request: Request):
     """Endpoint que recibe el webhook de ElevenLabs al finalizar llamada"""
-    
+
     try:
-        # Recibir datos del webhook
-        data = await request.json()
+        # Obtener el body raw para verificar la firma
+        body = await request.body()
+
+        # Verificar la firma del webhook si hay secret configurado
+        if ELEVENLABS_WEBHOOK_SECRET:
+            signature = request.headers.get("x-elevenlabs-signature", "")
+            if not verificar_webhook_signature(body, signature):
+                raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+        # Parsear los datos del webhook
+        data = json.loads(body)
         
         # Extraer información relevante
         event_type = data.get("event_type")
