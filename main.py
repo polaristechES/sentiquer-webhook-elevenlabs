@@ -280,6 +280,7 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
 
 
 @app.post("/webhook/elevenlabs")
+@app.post("/webhook/ele   venlabs")  # Ruta alternativa para manejar URL malformada de ElevenLabs
 async def elevenlabs_webhook(request: Request):
     """Endpoint que recibe el webhook de ElevenLabs al finalizar llamada"""
 
