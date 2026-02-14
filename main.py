@@ -274,15 +274,32 @@ def enviar_email_resumen(resumen: dict, nombre_usuario: str, conversation_id: st
     </html>
     """
     
+    # Construir lista de destinatarios
+    destinatarios = []
+
+    # EMAIL_TO puede tener múltiples emails separados por coma
+    email_to = os.getenv("EMAIL_TO", "")
+    if "," in email_to:
+        # Si hay múltiples emails separados por coma
+        destinatarios = [email.strip() for email in email_to.split(",")]
+    else:
+        # Un solo email
+        destinatarios = [email_to]
+
+    # Agregar EMAIL_TO_2 si existe (segunda opción)
+    email_to_2 = os.getenv("EMAIL_TO_2")
+    if email_to_2:
+        destinatarios.append(email_to_2)
+
     params = {
         "from": os.getenv("EMAIL_FROM"),
-        "to": [os.getenv("EMAIL_TO")],
+        "to": destinatarios,
         "subject": f"💬 Conversación con {nombre_usuario} - {fecha}",
         "html": html_email
     }
 
     print(f"   📤 Enviando email desde: {params['from']}")
-    print(f"   📥 Destinatario: {params['to'][0]}")
+    print(f"   📥 Destinatarios: {', '.join(params['to'])}")
     print(f"   📋 Asunto: {params['subject']}")
 
     try:

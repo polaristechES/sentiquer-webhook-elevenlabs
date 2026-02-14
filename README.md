@@ -16,7 +16,11 @@ Copia `.env.example` a `.env` y configura:
 - `RESEND_API_KEY`: Tu API key de Resend
 - `OPENAI_API_KEY`: Tu API key de OpenAI
 - `EMAIL_FROM`: Email remitente (debe estar verificado en Resend)
-- `EMAIL_TO`: Email destinatario de los resúmenes
+- `EMAIL_TO`: Email(s) destinatario(s). Opciones:
+  - Un solo email: `email@ejemplo.com`
+  - Múltiples emails separados por coma: `email1@ejemplo.com,email2@ejemplo.com`
+- `EMAIL_TO_2` (opcional): Segundo destinatario si prefieres usar variables separadas
+- `ELEVENLABS_WEBHOOK_SECRET`: Webhook secret de ElevenLabs (para verificación de firma)
 
 ## Instalación local
 
